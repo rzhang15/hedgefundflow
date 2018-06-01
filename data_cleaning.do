@@ -37,6 +37,7 @@ drop strat1-strat14
 // Merge in S&P, 3-month treasury bill, 3-month risk free rate, and CBOE volatility index (median over a month)
 clear
 use sp500.dta 
+rename caldt date
 replace date = mofd(date)
 format date %tm
 save sp500.dta, replace
@@ -62,7 +63,7 @@ save VIX_avg.dta, replace
 use cleaned_data.dta
 merge m:1 date using sp500.dta
 drop _merge
-merge m:1 date using 3monthfr.dta
+merge m:1 date using 3monthrf.dta
 drop _merge
 merge m:1 date using TB3MS.dta
 drop _merge
@@ -101,14 +102,21 @@ tab primarycategory, gen(category)
 tab legalstructure, gen(legalstruct)
 tab domicilecountry, gen(onshore)
 gen onshore=0
-replace onshore = 1 if onshore32==1
+replace onshore = 1 if onshore29==1
 label variable onshore "0=domicile country not US, 1=domicile country US"
-drop onshore1-onshore33
+drop onshore1-onshore30
 tab live_graveyard, gen(survived)
 gen survived=0
 replace survived=1 if survived2==1
 label variable survived "0=graveyard fund as of April 2018, 1=live fund as of April 2018"
 drop survived1-survived2
+
+// Test if funds report monthly
+sort name date
+by name: gen pastdate = date[_n-1]
+gen reporting = date-pastdate
+sort reporting name date
+** seems like funds do report monthly for the most part */
 
 // Construct flow of fund
 sort name date
@@ -120,10 +128,15 @@ label variable flow_NAV "Flow of funds calculated using NAV"
 gen flow_ass = (estimatedassets-pastEstAss*(1+rateofreturn))/pastEstAss
 label variable flow_ass "Flow of funds calculated using estimated assets"
 
+replace flow_NAV = . if reporting>1
+replace flow_ass = . if reporting>1
+
 // Replace outliers
 replace flow_NAV=. if flow_NAV>10 & flow_NAV!=. // replaced 1 entry
-replace flow_ass=. if flow_ass>10 & flow_ass!=. // replaced ~10
-replace rateofreturn=. if rateofreturn>0.5 & rateofreturn!=. // replaced 1 entry
+replace flow_ass=. if flow_ass>10 & flow_ass!=. // replaced 31
+replace rateofreturn=. if rateofreturn>0.5 & rateofreturn!=. // replaced 74 entry
+
+sort name date
 
 // Control lag-1 returns and flows: 
 by name: gen pastflow_NAV = flow_NAV[_n-1]
@@ -149,6 +162,30 @@ label variable past3flow_ass "t-3 flow of funds calculated using estimated asset
 by name: gen past3returns = rateofreturn[_n-3]
 label variable past3returns "t-3 rate of returns"
 
+// Control lag-4 returns and flows: 
+by name: gen past4flow_NAV = flow_NAV[_n-4]
+label variable past4flow_NAV "t-4 flow of funds calculated using NAV"
+by name: gen past4flow_ass = flow_ass[_n-4]
+label variable past4flow_ass "t-4 flow of funds calculated using estimated assets"
+by name: gen past4returns = rateofreturn[_n-4]
+label variable past4returns "t-4 rate of returns"
+
+// Control lag-5 returns and flows: 
+by name: gen past5flow_NAV = flow_NAV[_n-5]
+label variable past5flow_NAV "t-5 flow of funds calculated using NAV"
+by name: gen past5flow_ass = flow_ass[_n-5]
+label variable past5flow_ass "t-5 flow of funds calculated using estimated assets"
+by name: gen past5returns = rateofreturn[_n-5]
+label variable past5returns "t-5 rate of returns"
+
+// Control lag-6 returns and flows: 
+by name: gen past6flow_NAV = flow_NAV[_n-6]
+label variable past6flow_NAV "t-6 flow of funds calculated using NAV"
+by name: gen past6flow_ass = flow_ass[_n-6]
+label variable past6flow_ass "t-6 flow of funds calculated using estimated assets"
+by name: gen past6returns = rateofreturn[_n-6]
+label variable past6returns "t-6 rate of returns"
+
 // Control lag-1 market conditions
 by name: gen pastvwretd = vwretd[_n-1]
 label variable pastvwretd "t-1 value weighted S&P return"
@@ -168,27 +205,13 @@ drop if minimuminvestment==.
 replace incentivefee = incentivefee/100
 replace managementfee = managementfee/100
 
-// Drop the fund if they don't report any estimated assets
-preserve
-	collapse (count) missing_ass = estimatedassets missing_flow = flow_ass (firstnm) first_nm = estimatedassets first_flow = flow_ass, by(productreference)
-	sort missing_ass missing_flow first_nm first_flow
-restore
-
-/* Drop Funds that Report Quarterly
-sort name date
-by name: gen pastdate = date[_n-1]
-gen reporting = date-pastdate
-sort reporting name date
-drop pastdate reporting
-** seems like funds do report monthly for the most part */
-
 // Categorical variable for before, during, after financial crisis 
 gen crisis=2
 replace crisis=0 if date<tm(2008m1)
 replace crisis=1 if date>tm(2009m6)
 label variable crisis "0=before crisis, 1=after crisis, 2=during crisis"
 
-// Categorical variable for bottom, middle, top 30% of funds by estimated assets over the course of a calendar year
+/* Categorical variable for bottom, middle, top 30% of funds by estimated assets over the course of a calendar year
 gen year = year(date_orig)
 
 collapse (max) assets=estimatedassets, by(productreference year)
@@ -217,6 +240,22 @@ merge m:1 productreference year using size_tercile.dta, keepus(bot30 mid30 top30
 drop _merge
 
 save cleaned_data.dta, replace
+*/
+
+// Drop the fund if they don't report any estimated assets
+preserve
+	collapse (count) missing_ass = estimatedassets missing_flow = flow_ass (firstnm) first_nm = estimatedassets first_flow = flow_ass, by(productreference)
+	sort missing_ass missing_flow first_nm first_flow
+	gen no_ass = 0
+	replace no_ass = 1 if missing_ass==0 
+	save missing_estass.dta, replace
+restore
+
+merge m:1 productreference using missing_estass.dta, keepus(no_ass)
+drop if no_ass==1
+drop _merge
+
+save cleaned_data.dta, replace
 
 // Construct data for 2005-2007 cross-sectional data
 collapse (first) first_date=date (last) last_date=date, by(productreference)
@@ -225,7 +264,7 @@ gen present05to07 = 1
 save 05to07.dta, replace
 clear
 
-use cleaned_data.dta
+use cleaned_data2.dta
 merge m:1 productreference using 05to07.dta
 drop first_date last_date
 keep if present05to07==1
@@ -235,14 +274,14 @@ save cleaned_05to07.dta, replace
 
 // Construct data for 2008-2009 cross-sectional data
 clear 
-use cleaned_data.dta
+use cleaned_data2.dta
 collapse (first) first_date=date (last) last_date=date, by(productreference)
 drop if first_date>tm(2008m1) | last_date<tm(2009m12)
 gen present08to09 = 1
 save 08to09.dta, replace
 clear
 
-use cleaned_data.dta
+use cleaned_data2.dta
 merge m:1 productreference using 08to09.dta
 drop first_date last_date
 keep if present08to09==1
@@ -252,14 +291,14 @@ save cleaned_08to09.dta, replace
  
 // Construct data for 2010-2012 cross-sectional data
 clear 
-use cleaned_data.dta
+use cleaned_data2.dta
 collapse (first) first_date=date (last) last_date=date, by(productreference)
 drop if first_date>tm(2010m1) | last_date<tm(2012m12)
 gen present10to12 = 1
 save 10to12.dta, replace
 clear
 
-use cleaned_data.dta
+use cleaned_data2.dta
 merge m:1 productreference using 10to12.dta
 drop first_date last_date
 keep if present10to12==1
