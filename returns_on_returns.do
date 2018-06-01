@@ -73,19 +73,36 @@ sort name date
 by name: gen past4returns = rateofreturn[_n-4]
 by name: gen past5returns = rateofreturn[_n-5]
 by name: gen past6returns = rateofreturn[_n-6]
+by name: gen past7returns = rateofreturn[_n-7]
+by name: gen past8returns = rateofreturn[_n-8]
 by name: gen past9returns = rateofreturn[_n-9]
+by name: gen past10returns = rateofreturn[_n-10]
+by name: gen past11returns = rateofreturn[_n-11]
 by name: gen past12returns = rateofreturn[_n-12]
+
+by name: gen oneyearreturns = (1+ pastreturns) * (1+ past2returns) * (1+ past3returns) * (1+ past4returns) * (1+ past5returns) * (1+ past6returns) * (1+ past7returns) * (1+ past8returns) * (1+ past9returns) * (1+ past10returns)  * (1+ past11returns) * (1+ past12returns) if reporting == 1 | reporting == .
+by name: gen threeyearreturns = oneyearreturns * oneyearreturns[_n-12] * oneyearreturns[_n-24]  if reporting == 1 | reporting == .
+
 
 by name: gen pastsp = sprtrn[_n-1]
 by name: gen pastvx = vix[_n-1]
 by name: gen pasttb = tb3ms[_n-1]
 
+
+
+
 preserve
+
+
+
+*********** AFTER ****************
 
 *training data
 keep if date < tm(2006m1)
 
-reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+*reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+*reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
 
 restore
 
@@ -97,14 +114,23 @@ predict preds
 
 scatter rateofreturn preds
 cor rateofreturn preds
+keep rateofreturn preds
+*export delimited "before-predictions-ex-oneyear-w-controls",replace
+*export delimited "before-predictions-ex-oneyear",replace
+export delimited "before-predictions-w-oneyear", replace
+
 
 restore
 
+
+*********** AFTER ****************
 preserve
 
 keep if (date > tm(2009m6) & date < tm(2015m12))
 
-reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+*reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
 
 restore
 preserve
@@ -115,3 +141,8 @@ predict preds
 
 scatter rateofreturn preds
 cor rateofreturn preds
+keep rateofreturn preds
+*export delimited "after-predictions-ex-oneyear-w-controls"
+export delimited "after-predictions-ex-oneyear"
+*export delimited "after-predictions-w-oneyear"
+
