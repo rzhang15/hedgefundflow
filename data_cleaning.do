@@ -186,6 +186,38 @@ label variable past6flow_ass "t-6 flow of funds calculated using estimated asset
 by name: gen past6returns = rateofreturn[_n-6]
 label variable past6returns "t-6 rate of returns"
 
+// More lag returns
+by name: gen past7returns = rateofreturn[_n-7]
+by name: gen past8returns = rateofreturn[_n-8]
+by name: gen past9returns = rateofreturn[_n-9]
+by name: gen past10returns = rateofreturn[_n-10]
+by name: gen past11returns = rateofreturn[_n-11]
+by name: gen past12returns = rateofreturn[_n-12]
+
+// aggregate returns
+sort name date
+by name: gen oneyearreturns = (1+ pastreturns) * (1+ past2returns) * (1+ past3returns) * (1+ past4returns) * (1+ past5returns) * (1+ past6returns) * (1+ past7returns) * (1+ past8returns) * (1+ past9returns) * (1+ past10returns)  * (1+ past11returns) * (1+ past12returns)
+by name: gen threeyearreturns = oneyearreturns * oneyearreturns[_n-12] * oneyearreturns[_n-24]
+by name: gen agg6returns = (1+pastreturns)*(1+past2returns)*(1+past3returns)*(1+past4returns)*(1+past5returns)*(1+past6returns)
+label variable agg6returns "past 6 months aggregate returns"
+
+// More lag flow_ass
+sort name date
+by name: gen past7flow_ass = flow_ass[_n-7]
+by name: gen past8flow_ass = flow_ass[_n-8]
+by name: gen past9flow_ass = flow_ass[_n-9]
+by name: gen past10flow_ass = flow_ass[_n-10]
+by name: gen past11flow_ass = flow_ass[_n-11]
+by name: gen past12flow_ass = flow_ass[_n-12]
+
+// aggregate flow_ass
+by name: gen oneyearflow_ass = (1+ pastflow_ass) * (1+ past2flow_ass) * (1+ past3flow_ass) * (1+ past4flow_ass) * (1+ past5flow_ass) * (1+ past6flow_ass) * (1+ past7flow_ass) * (1+ past8flow_ass) * (1+ past9flow_ass) * (1+ past10flow_ass)  * (1+ past11flow_ass) * (1+ past12flow_ass)
+by name: gen threeyearflow_ass = oneyearflow_ass * oneyearflow_ass[_n-12] * oneyearflow_ass[_n-24]
+by name: gen agg6flow_ass = (1+pastflow_ass)*(1+past2flow_ass)*(1+past3flow_ass)*(1+past4flow_ass)*(1+past5flow_ass)*(1+past6flow_ass)
+label variable agg6flow_ass "past 6 months aggregate flow"
+by name: gen agg3flow_ass = (1+pastflow_ass)*(1+past2flow_ass)*(1+past3flow_ass)
+label variable agg3flow_ass "past 6 months aggregate flow"
+
 // Control lag-1 market conditions
 by name: gen pastvwretd = vwretd[_n-1]
 label variable pastvwretd "t-1 value weighted S&P return"
@@ -204,6 +236,8 @@ drop if incentivefee==.
 drop if minimuminvestment==.
 replace incentivefee = incentivefee/100
 replace managementfee = managementfee/100
+gen ln_min_inv = log(minimuminvestment)
+label variable ln_min_inv "log of minimum investment"
 
 // Categorical variable for before, during, after financial crisis 
 gen crisis=2
