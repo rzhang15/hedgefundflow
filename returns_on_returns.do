@@ -20,9 +20,12 @@ sort name date
 by name: gen past4returns = rateofreturn[_n-4]
 by name: gen past5returns = rateofreturn[_n-5]
 by name: gen past6returns = rateofreturn[_n-6]
+by name: gen past7returns = rateofreturn[_n-7]
+by name: gen past8returns = rateofreturn[_n-8]
 by name: gen past9returns = rateofreturn[_n-9]
+by name: gen past10returns = rateofreturn[_n-10]
+by name: gen past11returns = rateofreturn[_n-11]
 by name: gen past12returns = rateofreturn[_n-12]
-
 sort name date
 
 by name: gen N = _n
@@ -40,14 +43,24 @@ sort crisis name date
 by crisis: reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns past9returns past12returns, cluster(name)
 
 
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns if crisis == 0
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 0, cluster(name)
 estimates store before
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns if crisis == 1
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 1, cluster(name)
 estimates store after
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns if crisis == 2
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 2, cluster(name)
 estimates store during
 
-suest before after
+* Create latex table 
+esttab before during after using lagsBDA.tex, cells(b(fmt(%9.3fc) star) se(fmt(%9.3fc) par)) star(* 0.10 ** 0.05 *** 0.01) scalars(N_clust r2 F df_b) sfmt(%9.0fc %9.3fc %9.3fc %9.0fc) replace
+
+*WITHOUT CLUSTERS IN ORIGINAL TO ALLOW SUEST
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 0
+estimates store before
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 1
+estimates store after
+reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past7returns past8returns past9returns past10returns past11returns past12returns if crisis == 2
+estimates store during
+suest before after, cluster(name)
 
 test [before_mean = after_mean]
 * not the same
@@ -62,7 +75,29 @@ display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi
 test [before_mean]past3returns = [after_mean]past3returns
 local sign_ag = sign([after_mean]past3returns-[before_mean]past3returns)
 display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
-* We REJECT the null that the three period lag is less before
+* We fail to reject the null that the three period lag is less before
+
+local sign_ag = sign([after_mean]past4returns-[before_mean]past4returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past5returns-[before_mean]past5returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past6returns-[before_mean]past6returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past7returns-[before_mean]past7returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past8returns-[before_mean]past8returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past9returns-[before_mean]past9returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past10returns-[before_mean]past10returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past11returns-[before_mean]past11returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+local sign_ag = sign([after_mean]past12returns-[before_mean]past12returns)
+display "H_0: after coef >= before coef. p-value = " normal(`sign_ag'*sqrt(r(chi2)))
+
+
+
 
 
 clear
@@ -95,7 +130,7 @@ preserve
 
 
 
-*********** AFTER ****************
+*********** BEFORE ****************
 
 *training data
 keep if date < tm(2006m1)
