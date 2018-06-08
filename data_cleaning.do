@@ -230,7 +230,7 @@ label variable pastvix "t-1 value weighted CBOE VIX"
 by name: gen pastvolatility = volatility[_n-1]
 label variable pastvolatility "t-1 volatility using 24-month rolling window"
 
-// Drop the fund if missing ROR, NAV, incentive fee, management fee, high watermark, minimum investment
+// Drop the fund if missing  incentive fee, management fee, 
 drop if incentivefee==0 & managementfee==0
 drop if incentivefee==.
 drop if minimuminvestment==.
@@ -244,37 +244,6 @@ gen crisis=2
 replace crisis=0 if date<tm(2008m1)
 replace crisis=1 if date>tm(2009m6)
 label variable crisis "0=before crisis, 1=after crisis, 2=during crisis"
-
-/* Categorical variable for bottom, middle, top 30% of funds by estimated assets over the course of a calendar year
-gen year = year(date_orig)
-
-collapse (max) assets=estimatedassets, by(productreference year)
-gen tercile = .
-forvalues y=1994/2017 {
-	xtile terciles`y'=assets if year==`y', n(3)
-	replace tercile = terciles`y' if year==`y'
-}
-drop terciles1994-terciles2017
-gen bot30 = 0 
-replace bot30 = 1 if tercile==1
-gen mid30 = 0
-replace mid30 = 1 if tercile==2
-gen top30 = 0 
-replace top30 = 1 if tercile==3
-
-replace bot30=. if tercile==.
-replace mid30=. if tercile==.
-replace top30=. if tercile==.
-
-save size_tercile.dta, replace
-clear
-
-use cleaned_data.dta
-merge m:1 productreference year using size_tercile.dta, keepus(bot30 mid30 top30)
-drop _merge
-
-save cleaned_data.dta, replace
-*/
 
 // Drop the fund if they don't report any estimated assets
 preserve
