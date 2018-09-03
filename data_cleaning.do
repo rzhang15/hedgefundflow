@@ -258,6 +258,16 @@ merge m:1 productreference using missing_estass.dta, keepus(no_ass)
 drop if no_ass==1
 drop _merge
 
+// Create 12-month and year dummies for all observations
+gen date_day = dofm(date)
+gen month = month(date_day)
+tab month, gen(m)
+
+gen year = year(date_day)
+tab year, gen(y)
+
+drop date_day
+
 save cleaned_data.dta, replace
 
 // Construct data for 2005-2007 cross-sectional data
