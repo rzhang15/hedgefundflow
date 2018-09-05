@@ -5,7 +5,7 @@ Output:					Regressions and Data Analysis
 Original Date:			May 20, 2018
 */
 
-cd "/Users/rubyzhang/Desktop/UChicago/Year 3/Applied Econometrics/Project/data/"
+cd "/Users/rubyzhang/Desktop/UChicago/Year 3/Spring/Applied Econometrics/Project/Data, Code, Results/"
 
 clear
 
