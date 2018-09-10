@@ -10,10 +10,11 @@ Description: 			This code finds the relationship with present hedge fund
 						evidence for predictability of returns based on previous returns.
 */
 
-cd "\\itsnas\udesk\users\lucascusimano\Documents\ECON 21150"
+*cd "\\itsnas\udesk\users\lucascusimano\Documents\ECON 21150"
+cd "/Users/rubyzhang/Desktop/UChicago/Year 3/Applied Econometrics/Project/data/"
 
 *import delimited 
-use cleaned_data
+use cleaned_data.dta
 
 sort name date
 
@@ -32,7 +33,9 @@ by name: gen N = _n
 
 sort name date
 
-tsset productreference N
+*tsset productreference N
+
+xtset productreference date
 
 newey rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns past9returns past12returns if name == "Fund-1", lag(1)
 
@@ -128,8 +131,6 @@ by name: gen pasttb = tb3ms[_n-1]
 
 preserve
 
-
-
 *********** BEFORE ****************
 
 *training data
@@ -137,7 +138,9 @@ keep if date < tm(2006m1)
 
 *reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
 *reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
+*reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
+*xtreg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns past9returns past12returns m1-m12 y1-y24, fe cluster(name)
+xtreg rateofreturn i.direction#c.past*returns, fe cluster(name)
 
 restore
 
@@ -164,8 +167,10 @@ preserve
 keep if (date > tm(2009m6) & date < tm(2015m12))
 
 *reg rateofreturn pastsp pastvx pasttb pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
-reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
+*reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns, cluster(name) 
+*reg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns  past9returns past12returns oneyearreturns, cluster(name) 
+*xtreg rateofreturn pastreturns past2returns past3returns past4returns past5returns past6returns past9returns past12returns m1-m12 y1-y24, fe cluster(name)
+xtreg rateofreturn i.direction#c.past*returns, fe cluster(name)
 
 restore
 preserve
@@ -178,6 +183,7 @@ scatter rateofreturn preds
 cor rateofreturn preds
 keep rateofreturn preds
 *export delimited "after-predictions-ex-oneyear-w-controls"
-export delimited "after-predictions-ex-oneyear"
+export delimited "after-predictions-ex-oneyear", replace
 *export delimited "after-predictions-w-oneyear"
 
+restore

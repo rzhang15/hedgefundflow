@@ -268,6 +268,16 @@ tab year, gen(y)
 
 drop date_day
 
+// Create firm dummies for all observations
+
+tab productreference, gen(firm)
+
+// Create dummies for whether lag-1 return is positive or negative
+
+gen direction = 0 
+replace direction=1 if pastreturns >= 0 
+label variable direction "indicator variable for non-negative lag-1 return"
+
 save cleaned_data.dta, replace
 
 // Construct data for 2005-2007 cross-sectional data
